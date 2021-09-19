@@ -1,8 +1,6 @@
 #include "kgraph.h"
 #include "kgraph-data.h"
-#include <math.h>
 
-#ifdef __GNUC__
 #ifdef __AVX__
 #include <immintrin.h>
 #define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
@@ -23,7 +21,7 @@ float float_l2sqr_avx (float const *t1, float const *t2, unsigned dim) {
     const float *r = t2;
     const float *e_l = l + DD;
     const float *e_r = r + DD;
-    float unpack[8] __attribute__ ((aligned (32))) = {0, 0, 0, 0, 0, 0, 0, 0};
+    alignas(32) float unpack[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     float ret = 0.0;
     sum = _mm256_load_ps(unpack);
     switch (DR) {
@@ -170,7 +168,7 @@ float uint8_l2sqr_sse2 (uint8_t const *t1, uint8_t const *t2, unsigned dim) {
     const uint8_t *r = t2;
     const uint8_t *e_l = l + DD;
     const uint8_t *e_r = r + DD;
-    int32_t unpack[4] __attribute__ ((aligned (16))) = {0, 0, 0, 0};
+    alignas(16) int32_t unpack[4] = {0, 0, 0, 0};
     __m128i sum = _mm_load_si128((__m128i *)unpack);
     const __m128i z = sum;
     switch (DR) {
@@ -192,5 +190,4 @@ float uint8_l2sqr_sse2 (uint8_t const *t1, uint8_t const *t2, unsigned dim) {
     return float(ret);//sqrt(ret);
 }
 }
-#endif
 #endif

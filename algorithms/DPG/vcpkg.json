@@ -1,0 +1,13 @@
+{
+    "name": "dpg",
+    "version-string": "1.0.0",
+    "dependencies": [
+        "boost-program-options",
+        "boost-timer",
+        "boost-dynamic-bitset",
+        "boost-accumulators",
+        "boost-format",
+        "boost-chrono",
+        "boost-system"
+    ]
+}

@@ -8,13 +8,11 @@
 #include <iostream>
 #include <boost/timer/timer.hpp>
 #include <boost/program_options.hpp>
-#include <sys/time.h>
 #include <cctype>
 #include <random>
 #include <iomanip>
 #include <type_traits>
 #include <boost/timer/timer.hpp>
-#include <boost/tr1/random.hpp>
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 
@@ -140,7 +138,8 @@ int main(int argc, char *argv[]) {
         if (!std::is_floating_point<value_type>::value) {
             throw runtime_error("noise injection not implemented for non-floating-point value.");
         }
-        tr1::ranlux64_base_01 rng;
+        std::random_device rd{};
+        std::mt19937 gen{rd()};
         double sum = 0, sum2 = 0;
         for (unsigned i = 0; i < data.size(); ++i) {
             for (unsigned j = 0; j < data.dim(); ++j) {
@@ -153,10 +152,10 @@ int main(int argc, char *argv[]) {
         double avg2 = sum2 / total, avg = sum / total;
         double dev = sqrt(avg2 - avg * avg);
         cerr << "Adding Gaussian noise w/ " << noise << "x sigma(" << dev << ")..." << endl;
-        boost::normal_distribution<double> gaussian(0, noise * dev);
+        std::normal_distribution<> gaussian{0, noise * dev};
         for (unsigned i = 0; i < data.size(); ++i) {
             for (unsigned j = 0; j < data.dim(); ++j) {
-                data[i][j] += gaussian(rng);
+                data[i][j] += gaussian(gen);
             }
         }
     }

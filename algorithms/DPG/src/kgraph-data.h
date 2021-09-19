@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <boost/assert.hpp>
 
-#ifdef __GNUC__
 #ifdef __AVX__
 #define KGRAPH_MATRIX_ALIGN 32
 #else
@@ -17,7 +16,6 @@
 #define KGRAPH_MATRIX_ALIGN 16
 #else
 #define KGRAPH_MATRIX_ALIGN 4
-#endif
 #endif
 #endif
 
@@ -75,9 +73,10 @@ namespace kgraph {
             /*
             data.resize(row * stride);
             */
-            if (data) free(data);
-            data = (char *)memalign(A, row * stride); // SSE instruction needs data to be aligned
-            if (!data) throw runtime_error("memalign");
+            struct alignas(A) OverAligned { char b; };
+            if (data) delete[] data;
+            data = (char*) new OverAligned[row * stride];
+            if (!data) throw std::runtime_error("memalign");
         }
     public:
         Matrix (): col(0), row(0), stride(0), data(0) {}
@@ -85,7 +84,7 @@ namespace kgraph {
             reset(r, c);
         }
         ~Matrix () {
-            if (data) free(data);
+            if (data) delete[] data;
         }
         unsigned size () const {
             return row;
@@ -477,7 +476,6 @@ namespace kgraph {
 }
 
 #ifndef KGRAPH_NO_VECTORIZE
-#ifdef __GNUC__
 #ifdef __AVX__
 namespace kgraph { namespace metric {
         template <>
@@ -497,7 +495,6 @@ namespace kgraph { namespace metric {
             return uint8_l2sqr_sse2(t1, t2, dim);
         }
 }}
-#endif
 #endif
 #endif
 #endif

@@ -9,6 +9,7 @@ static char const *kgraph_version = "deiversified proximity graph";
 #include <random>
 #include <algorithm>
 #include <queue>
+#include <cinttypes>
 #include <boost/timer/timer.hpp>
 #define timer timer_for_boost_progress_t
 #include <boost/progress.hpp>
@@ -21,6 +22,14 @@ static char const *kgraph_version = "deiversified proximity graph";
 #include "boost/smart_ptr/detail/spinlock.hpp"
 #include "kgraph.h"
 #include "kgraph-data.h"
+
+#ifdef _MSC_VER
+  #include <malloc.h>
+  #define DPG_ALLOCA(var_name, dtype, size) auto var_name = (dtype*) alloca(size*sizeof(dtype));
+#else
+  #define DPG_ALLOCA(var_name, dtype, size) dtype var_name[size];
+#endif
+
 
 namespace kgraph {
 
@@ -228,7 +237,9 @@ namespace kgraph {
             for (unsigned &v: index) {
                 v = i++;
             }
-            random_shuffle(index.begin(), index.end());
+            std::random_device rd;
+            std::mt19937 gen{rd()};
+            std::shuffle(index.begin(), index.end(), gen);
 #ifdef PARALLEL            
 #pragma omp parallel for
 #endif             
@@ -348,7 +359,6 @@ namespace kgraph {
 	    return;
 	  }
 	  auto const &knn = graph[id];
-	  knn.size();
 	  
 	  fprintf(stderr, "%d\n%d\n=================\n", M[id], knn.size());
 	  for (int i = 0; i < knn.size(); ++i){
@@ -380,7 +390,7 @@ namespace kgraph {
 
       virtual void connectivity(unsigned const source, unsigned const dest){
 	uint32_t N = graph.size();
-	int level[N];
+  DPG_ALLOCA(level, int, N);
 	for (int i = 0; i < N; ++i){
 	  level[i] = 0;
 	}
@@ -671,7 +681,7 @@ namespace kgraph {
 	float * avg_arr = new float[N];
 	uint32_t true_N = N;
 #pragma omp parallel for
-        for (unsigned k = 0; k < N; k++){
+        for (int64_t k = 0; k < N; k++){
           int len = M[k];
 	  int true_len = len * (len - 1) / 2;
 	  float sum_angle = 0.0;
@@ -785,7 +795,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
       float cut = b_hit[edge_num];
 
       // update the neighbors by #hits 
-      Neighbor tmp[len];
+      DPG_ALLOCA(tmp, Neighbor, len);
       for ( int i=0; i < len; i++)
         tmp[i] = graph[k][i];
 
@@ -1042,11 +1052,13 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
 
 	  //fprintf(stderr, "mark\n");
 
+    std::random_device rd;
+    std::mt19937 gen{rd()};
 	  for (unsigned i = 0; i < N; ++i){ 
 	    //fprintf(stderr, "=======length: %d=========\n", graph[i].size());
 	    if (i % change_num == 0){
 	      // re-shuffle
-	      random_shuffle(rank_id_vec.begin(), rank_id_vec.end());
+	      std::shuffle(rank_id_vec.begin(), rank_id_vec.end(), gen);
 	      for (unsigned j = 0; j < N; ++j){
 		id_rank_vec[rank_id_vec[j]] = j;
 	      }
@@ -1069,7 +1081,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
 	      for (int k = 0; k < graph[i].size(); ++k){
 		// if there exists a point in graph[i] that is closer to i in both distance and rank, 
 		// then the test point will be not added into the graph
-		if (abs(j - id_rank_vec[i]) > abs(id_rank_vec[i] - id_rank_vec[graph[i][k].id]) && dist > graph[i][k].dist){
+		if (std::abs((std::intmax_t)(j - id_rank_vec[i])) > std::abs((std::intmax_t)(id_rank_vec[i] - id_rank_vec[graph[i][k].id])) && dist > graph[i][k].dist){
 		  is_dominated = true;
 		  break;
 		}
@@ -1130,7 +1142,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
             uint32_t N = graph.size();
             ofstream os(hubs_path, ios::binary);
             ofstream knn_out(knn_path, ios::binary);
-            int hubs[N];
+            DPG_ALLOCA(hubs, int, N);
 	    memset(hubs,0,sizeof(int)*N);
             for (unsigned i = 0; i < N; ++i) {
                 auto const &knn = graph[i];
@@ -2240,7 +2252,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
               #endif
                 vector<unsigned> random(params.S + 1);
                #pragma omp for
-                for (unsigned n = 0; n < N; ++n) {
+                for (int64_t n = 0; n < N; ++n) {
                     auto &nhood = nhoods[n];
                     Neighbors &pool = nhood.pool;
                     GenRandom(rng, &nhood.nn_new[0], nhood.nn_new.size(), N); //nn_new 2*S random sampling 
@@ -2263,7 +2275,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
         void join () {
             size_t cc = 0;
             #pragma omp parallel for default(shared) schedule(dynamic, 100) reduction(+:cc)
-            for (unsigned n = 0; n < oracle.size(); ++n) {
+            for (int64_t n = 0; n < oracle.size(); ++n) {
                 size_t uu = 0;
                 nhoods[n].found = false;
                 nhoods[n].join([&](unsigned i, unsigned j) {
@@ -2290,7 +2302,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
             }
             //!!! compute radius2
             #pragma omp parallel for
-            for (unsigned n = 0; n < N; ++n) {
+            for (int64_t n = 0; n < N; ++n) {
                 auto &nhood = nhoods[n];
                 if (nhood.found) {
                     unsigned maxl = std::min(nhood.M + params.S, nhood.L);
@@ -2306,7 +2318,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
                 nhood.radiusM = nhood.pool[nhood.M-1].dist;
             }
             #pragma omp parallel for
-            for (unsigned n = 0; n < N; ++n) {
+            for (int64_t n = 0; n < N; ++n) {
                 auto &nhood = nhoods[n];
                 auto &nn_new = nhood.nn_new;
                 auto &nn_old = nhood.nn_old;
@@ -2331,18 +2343,20 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
                     }
                 }
             }
+            std::random_device rd;
+            std::mt19937 gen{rd()};
             for (unsigned i = 0; i < N; ++i) {
                 auto &nn_new = nhoods[i].nn_new;
                 auto &nn_old = nhoods[i].nn_old;
                 auto &rnn_new = nhoods[i].rnn_new;
                 auto &rnn_old = nhoods[i].rnn_old;
                 if (params.R && (rnn_new.size() > params.R)) {
-                    random_shuffle(rnn_new.begin(), rnn_new.end());
+                    std::shuffle(rnn_new.begin(), rnn_new.end(), gen);
                     rnn_new.resize(params.R);
                 }
                 nn_new.insert(nn_new.end(), rnn_new.begin(), rnn_new.end());
                 if (params.R && (rnn_old.size() > params.R)) {
-                    random_shuffle(rnn_old.begin(), rnn_old.end());
+                    std::shuffle(rnn_old.begin(), rnn_old.end(), gen);
                     rnn_old.resize(params.R);
                 }
                 nn_old.insert(nn_old.end(), rnn_old.begin(), rnn_old.end());

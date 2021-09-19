@@ -3,13 +3,11 @@
 #include <iostream>
 #include <boost/timer/timer.hpp>
 #include <boost/program_options.hpp>
-#include <sys/time.h>
 #include <cctype>
 #include <random>
 #include <iomanip>
 #include <type_traits>
 #include <boost/timer/timer.hpp>
-#include <boost/tr1/random.hpp>
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 

@@ -18,8 +18,7 @@
  *   Last modified by: Yifang Sun, Jianbin Qin
  */
 
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
 #include "RandGen.h"
 
 /************************************************************
@@ -39,7 +38,7 @@ float gaussian(float mean, float sigma) {
     s = v1 * v1 + v2 * v2;
   } while (s >= 1.);
 
-  x = v1 * (float) sqrt(-2. * log(s) / s);
+  x = v1 * (float) std::sqrt(-2. * std::log(s) / s);
 
   /*  x is normally distributed with mean 0 and sigma 1.  */
   x = x * sigma + mean;

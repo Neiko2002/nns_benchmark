@@ -1,0 +1,8 @@
+.vscode/
+build/
+dist/
+datasets/
+graphs/
+build*
+.vscode
+cmake-variants.yaml
