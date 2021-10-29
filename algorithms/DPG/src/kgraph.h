@@ -254,6 +254,8 @@ namespace kgraph {
          * @params L Actually returned number of neighbors, output only.
          */
         virtual void get_nn (unsigned id, unsigned *nns, float *dists, unsigned *M, unsigned *L) const = 0;
+
+        virtual std::vector<std::vector<uint32_t>> getCompactGraph() = 0;
     };
 }
 

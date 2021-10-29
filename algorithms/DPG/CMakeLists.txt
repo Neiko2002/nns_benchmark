@@ -34,3 +34,8 @@ endfunction()
 dpg_add_executable(DPG_diverse)
 dpg_add_executable(DPG_index)
 dpg_add_executable(DPG_search)
+
+dpg_add_executable(DPG_diverse_sift1m)
+dpg_add_executable(DPG_diverse_sift1m_evaluation)
+dpg_add_executable(DPG_diverse_sift1m_stats)
+dpg_add_executable(DPG_index_sift1m)

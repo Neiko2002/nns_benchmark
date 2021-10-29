@@ -263,6 +263,18 @@ namespace kgraph {
     public:
         virtual ~KGraphImpl () {
         }
+
+        vector<vector<uint32_t>> getCompactGraph() {
+            auto compact_graph = std::vector<std::vector<uint32_t>>(graph.size());
+            for (size_t n = 0; n < graph.size(); n++) {
+                auto& neighbors = graph[n];
+                auto& neighbor_ids = compact_graph[n];
+                for (size_t e = 0; e < neighbors.size(); e++) 
+                    neighbor_ids.push_back(neighbors[e].id);
+            }
+            return compact_graph;
+        }
+
         virtual void load (char const *path) {
             BOOST_VERIFY(sizeof(unsigned) == sizeof(uint32_t));
             ifstream is(path, ios::binary);
@@ -631,7 +643,8 @@ namespace kgraph {
 	fprintf(stderr, "inverse edges: %d\n", count);
       }
 
-      virtual void add_backward_edges(){
+virtual void add_backward_edges() {
+  
 	uint32_t N = graph.size();
 	//ofstream os(hubs_path, ios::binary);
 	//vector <hub_pair > hubs;
@@ -669,7 +682,7 @@ namespace kgraph {
           M[i] = graph[i].size();
 	}
 	fprintf(stderr, "inverse edges: %d\n", count);
-      }
+}
 
 
  virtual void compute_diversity(IndexOracle const &oracle, int d, float * norm){ // diversity
@@ -727,7 +740,7 @@ namespace kgraph {
       }
 
 
-virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
+virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num)  {
 
     if (oracle.size() != graph.size()){
       throw runtime_error("diversify_by_cut : inconsistent." );
@@ -742,9 +755,10 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
     cerr << endl << "Progress : ";
 
     // #pragma omp parallel for
-    for (unsigned k = 0; k < N; k++){
+    for (unsigned k = 0; k < N; k++) {
 
-    if ( k % step == 0 ) cerr <<"*";
+      if ( k % step == 0 ) 
+        cerr <<"*";
 
 
       // float *map = new float[N];
@@ -759,7 +773,7 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
       } 
       
       // materialize the ditance here 
-      int* hit = new int[len];
+      auto hit = std::vector<int>(len);
 
       for ( int i=0; i< len; i++){
         graph[k][i].dist = oracle(k, graph[k][i].id );
@@ -785,17 +799,18 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
 
 
       // sort by the hits and find the cuts 
-      int* b_hit = new int[len];
+      auto b_hit = std::vector<int>(len);
       for ( int i=0; i< len; i++ )
         b_hit[i] = hit[i];
 
       // memcpy( b_hit, hit, sizeof(int)*len);
 
-      sort(b_hit, b_hit + len );
+      sort(b_hit.begin(), b_hit.end());
       float cut = b_hit[edge_num];
 
       // update the neighbors by #hits 
-      DPG_ALLOCA(tmp, Neighbor, len);
+      // DPG_ALLOCA(tmp, Neighbor, len);
+      auto tmp = std::vector<Neighbor>(len);
       for ( int i=0; i < len; i++)
         tmp[i] = graph[k][i];
 
@@ -807,9 +822,6 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
       }
 
       graph[k].resize(edge_num); // reset the size of NN list 
-
-      delete []hit;
-      delete []b_hit;
 
       /*      
       if ( k % 100 == 0 ){
@@ -853,10 +865,10 @@ virtual void diversify_by_cut(IndexOracle const &oracle, const int edge_num){
 
     cerr << endl;
 
-    } // end of diversify_by_cut
+} // end of diversify_by_cut
       
 
-    virtual  float statistics(IndexOracle const &oracle, const int edge_num){ // diversity
+virtual  float statistics(IndexOracle const &oracle, const int edge_num){ // diversity
     if (oracle.size() != graph.size()){
       throw runtime_error("in consistent ~!");
     }
@@ -2458,6 +2470,8 @@ public:
                 os.write(reinterpret_cast<char const *>(&pool[j].id), sizeof(pool[j].id));
               }
             }
+
+
             /* // deleted by yifang
             M.resize(N);
             graph.resize(N);
